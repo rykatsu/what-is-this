@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy Birthday Seira! 🎉</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Confetti Layer -->
+  <div class="confetti-container" id="confetti"></div>
+
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <span class="hat">🌈</span>
+      <h1 class="title">Happy Birthday<br>Seira!</h1>
+      <p class="subtitle">✨ Hadiah simpel dari gen α ✨</p>
+    </div>
+
+    <!-- Message Card -->
+    <div class="card">
+      <h2>🎂 Selamat Ulang Tahun!</h2>
+      <div class="divider"></div>
+      <p class="message">
+        Hari ini adalah hari dimana anda lahir! 🌟<br><br>
+        Semoga setiap harapan yang kamu impikan jadi kenyataan,
+        setiap langkah yang ditempuh ditemani kebahagiaan, dan hidupmu
+        dipenuhi hal-hal yang indah dan seru kaya hal di bawah ini! 🎈🌈<br><br>
+        <span class="sparkle">🎊 Have the most amazing birthday! 🎊</span>
+      </p>
+    </div>
+
+    <!-- Game Card -->
+    <div class="game-card">
+      <h2 class="game-title">👾 emoji pop!</h2>
+      <p class="game-msg" id="game-hint">Klik emoji sebanyak mungkin dalam 20 detik!</p>
+
+      <div class="game-stats">
+        <div class="stat">
+          <div class="stat-label">Score</div>
+          <div class="stat-value" id="score-val">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Waktu</div>
+          <div class="stat-value" id="timer-val">20</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Best</div>
+          <div class="stat-value" id="best-val">0</div>
+        </div>
+      </div>
+
+      <div class="arena" id="arena"></div>
+
+      <div class="result-banner" id="result-banner">
+        <div class="result-title" id="result-title">🎉 Keren abiss!</div>
+        <div class="result-sub" id="result-sub"></div>
+      </div>
+
+      <button class="btn btn-start" id="start-btn" onclick="startGame()">
+        👾 Mulai Main!
+      </button>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
