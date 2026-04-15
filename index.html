@@ -33,38 +33,148 @@
       </p>
     </div>
 
-    <!-- Game Card -->
-    <div class="game-card">
-      <h2 class="game-title">👾 emoji pop!</h2>
-      <p class="game-msg" id="game-hint">Klik emoji sebanyak mungkin dalam 20 detik!</p>
-
-      <div class="game-stats">
-        <div class="stat">
-          <div class="stat-label">Score</div>
-          <div class="stat-value" id="score-val">0</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Waktu</div>
-          <div class="stat-value" id="timer-val">20</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Best</div>
-          <div class="stat-value" id="best-val">0</div>
-        </div>
-      </div>
-
-      <div class="arena" id="arena"></div>
-
-      <div class="result-banner" id="result-banner">
-        <div class="result-title" id="result-title">🎉 Keren abiss!</div>
-        <div class="result-sub" id="result-sub"></div>
-      </div>
-
-      <button class="btn btn-start" id="start-btn" onclick="startGame()">
-        👾 Mulai Main!
-      </button>
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('emoji-pop')">👾 Emoji Pop</button>
+      <button class="tab-btn" onclick="switchTab('catch-game')">🧺 Catch It!</button>
+      <button class="tab-btn" onclick="switchTab('memory-game')">🃏 Memory</button>
     </div>
 
+    <!-- ======================== -->
+    <!--   EMOJI POP GAME         -->
+    <!-- ======================== -->
+    <div id="tab-emoji-pop" class="tab-content active">
+      <div class="game-card">
+        <h2 class="game-title">👾 emoji pop!</h2>
+        <p class="game-msg" id="game-hint">Klik emoji sebanyak mungkin dalam 20 detik!</p>
+
+        <div class="game-stats">
+          <div class="stat">
+            <div class="stat-label">Score</div>
+            <div class="stat-value" id="score-val">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Waktu</div>
+            <div class="stat-value" id="timer-val">20</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Best</div>
+            <div class="stat-value" id="best-val">0</div>
+          </div>
+        </div>
+
+        <div class="arena" id="arena"></div>
+
+        <div class="result-banner" id="result-banner">
+          <div class="result-title" id="result-title">🎉 Keren abiss!</div>
+          <div class="result-sub" id="result-sub"></div>
+        </div>
+
+        <button class="btn btn-start" id="start-btn" onclick="startGame()">
+          👾 Mulai Main!
+        </button>
+      </div>
+    </div>
+
+    <!-- ======================== -->
+    <!--   CATCH GAME             -->
+    <!-- ======================== -->
+    <div id="tab-catch-game" class="tab-content">
+      <div class="game-card">
+        <h2 class="game-title">🧺 Catch It!</h2>
+        <p class="game-msg" id="catch-hint">Tangkep item yang bagus, hindari yang jelek!</p>
+
+        <div class="game-stats">
+          <div class="stat">
+            <div class="stat-label">Score</div>
+            <div class="stat-value" id="catch-score">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Nyawa</div>
+            <div class="stat-value" id="catch-lives">❤️❤️❤️</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Best</div>
+            <div class="stat-value" id="catch-best">0</div>
+          </div>
+        </div>
+
+        <div class="catch-arena" id="catch-arena">
+          <div class="basket" id="basket">🧺</div>
+        </div>
+
+        <div class="result-banner" id="catch-result-banner">
+          <div class="result-title" id="catch-result-title"></div>
+          <div class="result-sub" id="catch-result-sub"></div>
+        </div>
+
+        <button class="btn btn-start" id="catch-start-btn" onclick="startCatchGame()">
+          🧺 Mulai Catch!
+        </button>
+        <p style="text-align:center; font-size:13px; color:#aaa; margin-top:8px;">
+          💡 Geser layar / mouse ke kiri-kanan buat gerakin keranjang!
+        </p>
+      </div>
+    </div>
+
+    <!-- ======================== -->
+    <!--   MEMORY MATCH           -->
+    <!-- ======================== -->
+    <div id="tab-memory-game" class="tab-content">
+      <div class="game-card">
+        <h2 class="game-title">🃏 Memory Match!</h2>
+        <p class="game-msg" id="memory-hint">Temuin semua pasangan kartu!</p>
+
+        <div class="game-stats">
+          <div class="stat">
+            <div class="stat-label">Pasangan</div>
+            <div class="stat-value" id="mem-pairs">0/8</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Langkah</div>
+            <div class="stat-value" id="mem-moves">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Waktu</div>
+            <div class="stat-value" id="mem-time">0s</div>
+          </div>
+        </div>
+
+        <div class="memory-grid" id="memory-grid"></div>
+
+        <div class="result-banner" id="mem-result-banner">
+          <div class="result-title" id="mem-result-title"></div>
+          <div class="result-sub" id="mem-result-sub"></div>
+        </div>
+
+        <button class="btn btn-start" id="mem-start-btn" onclick="startMemoryGame()">
+          🃏 Mulai Gamenya!
+        </button>
+      </div>
+    </div>
+
+
+
+  </div>
+
+  <!-- Music Player -->
+  <audio id="bg-music" loop>
+    <source src="bgm/toby fox - UNDERTALE Soundtrack - 90 His Theme.flac" type="audio/mpeg">
+  </audio>
+
+  <!-- SFX -->
+  <audio id="sfx-pop" src="sfx/mixkit-hard-pop-click-2364.wav" preload="auto"></audio>
+  <audio id="sfx-catch" src="sfx/chieuk-coin-257878.mp3" preload="auto"></audio>
+  <audio id="sfx-miss" src="sfx/universfield-fail-144746.mp3" preload="auto"></audio>
+  <audio id="sfx-match" src="sfx/meldix-success-340660.mp3" preload="auto"></audio>
+  <audio id="sfx-win" src="sfx/floraphonic-you-win-sequence-1-183948.mp3" preload="auto"></audio>
+
+  <div class="music-control">
+    <span style="font-size:12px;color:#888;align-self:center;">BGM</span>
+    <button onclick="playMusic()" title="Play">🎵</button>
+    <button onclick="pauseMusic()" title="Pause">⏸</button>
+    <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="0.5"
+      oninput="setVolume(this.value)" style="width:60px;accent-color:#FF6B9D;">
   </div>
 
   <script src="script.js"></script>
