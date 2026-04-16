@@ -20,6 +20,174 @@ function spawnConfetti() {
 }
 
 // =====================
+//   SECRET CODE SYSTEM
+// =====================
+// Code: "gurita Bourbon 2023/04/29 ✨"
+// Split: ["gurita", "Bourbon", "2023/04/29", "✨"]
+const CODE_PARTS = ['gurita', 'Bourbon', '2023/04/29', '✨'];
+let foundCodes = [false, false, false, false];
+// earnedCodes tracks which codes have been *earned* via gameplay (but not yet shown)
+let earnedCodes = [false, false, false, false];
+let giftPopupOpened = false;
+let giftCodeClaimed = false;
+let secretTabOpened = false;
+
+// Called by games — only marks as earned, doesn't reveal yet
+function earnCodeFragment(index) {
+  if (earnedCodes[index]) return;
+  earnedCodes[index] = true;
+  // If secret tab is already open, reveal immediately
+  if (secretTabOpened) {
+    revealCodeFragment(index);
+  }
+}
+
+// Actually shows the fragment in the UI
+function revealCodeFragment(index) {
+  if (foundCodes[index]) return;
+  foundCodes[index] = true;
+
+  const fragEl = document.getElementById(`code-frag-${index + 1}`);
+  const valEl  = document.getElementById(`code-frag-${index + 1}-val`);
+  const slotVal = document.getElementById(`slot-${index + 1}-val`);
+  const slot   = document.getElementById(`slot-${index + 1}`);
+
+  if (valEl)  valEl.textContent  = CODE_PARTS[index];
+  if (slotVal) slotVal.textContent = CODE_PARTS[index];
+  if (slot)   slot.classList.add('filled');
+
+  if (fragEl) {
+    fragEl.style.display = 'block';
+    fragEl.classList.add('frag-animate');
+  }
+
+  playSound('sfx-match');
+  checkAllCodesFound();
+}
+
+function revealGiftCodeFragment() {
+  if (giftCodeClaimed) return;
+  giftCodeClaimed = true;
+  earnedCodes[3] = true;
+  foundCodes[3] = true;
+
+  const fragEl  = document.getElementById('code-frag-gift');
+  const valEl   = document.getElementById('code-frag-gift-val');
+  const slotVal = document.getElementById('slot-gift-val');
+  const slot    = document.getElementById('slot-gift');
+
+  if (valEl)   valEl.textContent   = CODE_PARTS[3];
+  if (slotVal) slotVal.textContent = CODE_PARTS[3];
+  if (slot)    slot.classList.add('filled');
+
+  if (fragEl) {
+    fragEl.style.display = 'block';
+    fragEl.classList.add('frag-animate');
+  }
+
+  playSound('sfx-unlock');
+  checkAllCodesFound();
+}
+
+function checkAllCodesFound() {
+  if (foundCodes.every(Boolean)) {
+    const secretEntry = document.getElementById('secret-entry-card');
+    if (secretEntry && secretEntry.style.display !== 'none') {
+      const input = document.getElementById('secret-code-input');
+      if (input) input.value = CODE_PARTS.join(' ');
+      setTimeout(() => {
+        secretEntry.classList.add('all-found');
+        secretEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 400);
+    }
+  }
+}
+
+// Called when Secret tab is opened — reveals all earned game codes
+function onSecretTabOpen() {
+  if (secretTabOpened) return;
+  secretTabOpened = true;
+
+  // Show the secret entry card
+  const secretEntry = document.getElementById('secret-entry-card');
+  if (secretEntry) secretEntry.style.display = 'block';
+
+  // Reveal any game codes already earned, with a small stagger
+  let delay = 200;
+  for (let i = 0; i < 3; i++) {
+    if (earnedCodes[i]) {
+      setTimeout(() => revealCodeFragment(i), delay);
+      delay += 300;
+    }
+  }
+}
+
+// Gift popup logic
+function openGiftPopup() {
+  giftPopupOpened = true;
+  const overlay = document.getElementById('gift-popup-overlay');
+  if (overlay) {
+    overlay.classList.add('open');
+    playSound('sfx-gift');
+    // Animate the gift icon
+    const anim = document.getElementById('gift-popup-anim');
+    if (anim) {
+      anim.textContent = '🎁';
+      setTimeout(() => { anim.textContent = '🎊'; }, 400);
+      setTimeout(() => { anim.textContent = '🎉'; }, 800);
+      setTimeout(() => { anim.textContent = '🎊'; }, 1200);
+    }
+  }
+}
+
+function closeGiftPopup(event) {
+  if (event.target === document.getElementById('gift-popup-overlay')) {
+    closeGiftPopupDirect();
+  }
+}
+
+function closeGiftPopupDirect() {
+  const overlay = document.getElementById('gift-popup-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function claimGiftCode() {
+  closeGiftPopupDirect();
+  // Ensure secret entry card is visible
+  const secretEntry = document.getElementById('secret-entry-card');
+  if (secretEntry) secretEntry.style.display = 'block';
+  setTimeout(() => {
+    revealGiftCodeFragment();
+    if (foundCodes.slice(0, 3).every(Boolean)) {
+      const input = document.getElementById('secret-code-input');
+      if (input && !input.value) input.value = CODE_PARTS.join(' ');
+      setTimeout(() => {
+        if (secretEntry) {
+          secretEntry.classList.add('all-found');
+          secretEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500);
+    }
+  }, 300);
+}
+
+function checkSecretCode() {
+  const input = document.getElementById('secret-code-input');
+  const errorEl = document.getElementById('secret-error');
+  const fullCode = CODE_PARTS.join(' ');
+
+  if (input.value.trim() === fullCode) {
+    errorEl.style.display = 'none';
+    playSound('sfx-unlock');
+    setTimeout(() => { window.location.href = 'secret.html'; }, 400);
+  } else {
+    errorEl.style.display = 'block';
+    input.classList.add('shake-input');
+    setTimeout(() => input.classList.remove('shake-input'), 400);
+  }
+}
+
+// =====================
 //   AUDIO
 // =====================
 let music;
@@ -54,17 +222,23 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tabId).classList.add('active');
   event.currentTarget.classList.add('active');
+
+  // When Secret tab is opened for the first time, reveal earned codes
+  if (tabId === 'secret-gift') {
+    onSecretTabOpen();
+  }
 }
 
 // =============================
 //   EMOJI POP GAME
 // =============================
-const BALLOONS = ['🎭','💅','🍡','🔍','🍲','🌸','⚖️','🌈','🎨','✏️','🦄','🎀','🍰','🌺'];
+const BALLOONS = ['🃏','💅','🍡','🔍','🍲','🌸','⚖️','🌈','🎨','✏️','🦄','🔫','📖','🖥️'];
 const POP_FX   = ['💥','✨','🌟','💫','🎉'];
 
 let score = 0, timer = 20, best = 0, running = false;
 let gameInterval, spawnInterval;
 let arena, scoreEl, timerEl, bestEl, hintEl, resultBanner, resultTitle, resultSub, startBtn;
+let code1Revealed = false;
 
 function initRefs() {
   arena        = document.getElementById('arena');
@@ -92,7 +266,9 @@ function startGame() {
   gameInterval  = setInterval(() => {
     timer--;
     timerEl.textContent = timer;
-    if (timer <= 5) timerEl.style.color = '#E53935';
+    if (timer <= 5) {
+      timerEl.style.color = '#E53935';
+    }
     if (timer <= 0) endGame();
   }, 1000);
 }
@@ -116,6 +292,13 @@ function popBalloon(balloon, event) {
   score++;
   scoreEl.textContent = score;
   playSound('sfx-pop');
+
+  // Code fragment trigger at score 18
+  if (score === 18 && !code1Revealed) {
+    code1Revealed = true;
+    earnCodeFragment(0);
+  }
+
   const rect = arena.getBoundingClientRect();
   const fx = document.createElement('div');
   fx.className = 'pop-fx';
@@ -151,13 +334,14 @@ function endGame() {
 // =============================
 //   CATCH GAME
 // =============================
-const GOOD_ITEMS = ['🎂','🎁','🌸','⭐','💖','🍰','🎀','🌈','✨','🦄'];
-const BAD_ITEMS  = ['💀','👹','😈','🤢','💩'];
+const GOOD_ITEMS = ['🐙','👱🏽‍♂️','👔','🧝‍♀️','⚔️','🦋','💻','🌈','🥊','📺'];
+const BAD_ITEMS  = ['💀','👹','😈','🤮','💩'];
 
 let catchScore = 0, catchLives = 3, catchBest = 0, catchRunning = false;
 let catchSpawnInterval, catchAnimFrame;
 let fallingItems = [];
 let basketX = 50;
+let code2Revealed = false;
 
 function startCatchGame() {
   if (catchRunning) return;
@@ -172,13 +356,11 @@ function startCatchGame() {
   document.getElementById('catch-hint').textContent = 'Tangkap yang bagus, hindari yang jelek!';
 
   const catchArena = document.getElementById('catch-arena');
-  // Clear old items
   catchArena.querySelectorAll('.falling-item').forEach(el => el.remove());
 
   basketX = 50;
   updateBasket();
 
-  // Mouse/touch control
   catchArena.onmousemove = (e) => {
     const rect = catchArena.getBoundingClientRect();
     basketX = ((e.clientX - rect.left) / rect.width) * 100;
@@ -216,19 +398,23 @@ function catchLoop(ts) {
     item.y += item.speed * (dt / 16);
     item.el.style.top = item.y + 'px';
 
-    // Check catch (bottom zone)
     if (item.y >= arenaH - 90) {
-      const itemXpx = (item.xPct / 100) * arenaW;
+      const itemXpx   = (item.xPct / 100) * arenaW;
       const basketXpx = (basketX / 100) * arenaW;
-      const hitRange = 55;
+      const hitRange  = 55;
 
       if (Math.abs(itemXpx - basketXpx) < hitRange) {
-        // Caught!
         if (item.good) {
           catchScore++;
           document.getElementById('catch-score').textContent = catchScore;
           playSound('sfx-catch');
           showCatchFx(catchArena, item.xPct, item.y, '✨ +1', '#69F0AE');
+
+          // Code fragment trigger at score 4
+          if (catchScore === 4 && !code2Revealed) {
+            code2Revealed = true;
+            earnCodeFragment(1);
+          }
         } else {
           catchLives--;
           updateCatchLives();
@@ -240,7 +426,6 @@ function catchLoop(ts) {
         return false;
       }
 
-      // Missed good item
       if (item.y >= arenaH - 20) {
         if (item.good) {
           catchLives--;
@@ -306,10 +491,10 @@ function endCatchGame() {
   document.getElementById('catch-start-btn').textContent = '🧺 Main Lagi!';
   playSound('sfx-win');
   let msg, sub;
-  if (catchScore >= 20)     { msg = '🏆 sepuh menangkap!'; sub = `${catchScore} item! Hebat heabat!`; }
-  else if (catchScore >= 12){ msg = '🎉 cool af!';           sub = `${catchScore} item gotcha!`; }
-  else if (catchScore >= 5) { msg = '😄 so so lah!';         sub = `${catchScore} item. Coba lagi yuk!`; }
-  else                       { msg = '🌸 yuk bisa yuk!';        sub = `${catchScore} item. Latihan dulu yah!`; }
+  if (catchScore >= 20)     { msg = '🏆 sepuh menangkap!'; sub = `${catchScore} item! Hebat hebat!`; }
+  else if (catchScore >= 12){ msg = '🎉 cool af!';          sub = `${catchScore} item gotcha!`; }
+  else if (catchScore >= 5) { msg = '😄 so so lah!';        sub = `${catchScore} item. Coba lagi yuk!`; }
+  else                       { msg = '🌸 yuk bisa yuk!';     sub = `${catchScore} item. Latihan dulu yah!`; }
   document.getElementById('catch-result-title').textContent = msg;
   document.getElementById('catch-result-sub').textContent   = sub;
   document.getElementById('catch-result-banner').classList.add('show');
@@ -317,73 +502,242 @@ function endCatchGame() {
 }
 
 // =============================
+//   STAR TAP GAME
+// =============================
+const STAR_EMOJIS = ['⭐','🌟','💫','✨','🌠'];
+const BOMB_EMOJIS = ['💣','🖤','☠️'];
+
+let starScore = 0, starLives = 3, starBest = 0, starRunning = false;
+let starSpawnInterval, starSpeedInterval;
+let activeStars = [];
+let starSpawnDelay = 1200;
+let code3Revealed = false;
+
+function startStarGame() {
+  if (starRunning) return;
+  starRunning = true;
+  starScore = 0; starLives = 3; starSpawnDelay = 1200;
+  activeStars = [];
+
+  document.getElementById('star-score').textContent = '0';
+  document.getElementById('star-lives').textContent = '⭐⭐⭐';
+  document.getElementById('star-result-banner').classList.remove('show');
+  document.getElementById('star-start-btn').disabled = true;
+  document.getElementById('star-hint').textContent = 'Tap bintangnya sebelum menghilang!';
+
+  const arena = document.getElementById('star-arena');
+  arena.innerHTML = '';
+
+  // Spawn loop (dynamic delay)
+  function scheduleSpawn() {
+    if (!starRunning) return;
+    spawnStar();
+    starSpawnTimeout = setTimeout(scheduleSpawn, starSpawnDelay);
+  }
+  scheduleSpawn();
+
+  // Speed up every 5 seconds
+  starSpeedInterval = setInterval(() => {
+    if (!starRunning) return;
+    starSpawnDelay = Math.max(400, starSpawnDelay - 100);
+  }, 5000);
+}
+
+let starSpawnTimeout;
+
+function spawnStar() {
+  if (!starRunning) return;
+  const arena = document.getElementById('star-arena');
+  const isBomb = Math.random() < 0.2;
+  const pool = isBomb ? BOMB_EMOJIS : STAR_EMOJIS;
+  const emoji = pool[Math.floor(Math.random() * pool.length)];
+
+  const el = document.createElement('div');
+  el.className = 'star-item' + (isBomb ? ' star-bomb' : '');
+  el.textContent = emoji;
+
+  const maxX = arena.offsetWidth - 60;
+  const maxY = arena.offsetHeight - 60;
+  const x = 10 + Math.random() * Math.max(10, maxX - 10);
+  const y = 10 + Math.random() * Math.max(10, maxY - 10);
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+
+  const lifespan = Math.max(800, 2000 - (starScore * 30));
+  el.style.animationDuration = lifespan + 'ms';
+
+  el.addEventListener('click', () => tapStar(el, isBomb));
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); tapStar(el, isBomb); });
+
+  arena.appendChild(el);
+
+  // Auto-remove when time runs out
+  const timeout = setTimeout(() => {
+    if (el.parentNode) {
+      el.remove();
+      if (!isBomb && starRunning) {
+        // Missed a star = lose life
+        starLives--;
+        updateStarLives();
+        playSound('sfx-star-miss');
+        showStarFx(arena, x, y, '💨', '#FF8E53');
+        if (starLives <= 0) endStarGame();
+      }
+    }
+  }, lifespan);
+
+  el._timeout = timeout;
+}
+
+function tapStar(el, isBomb) {
+  if (!starRunning || !el.parentNode) return;
+  clearTimeout(el._timeout);
+  el.remove();
+
+  const arena = document.getElementById('star-arena');
+
+  if (isBomb) {
+    starLives--;
+    updateStarLives();
+    playSound('sfx-miss');
+    showStarFx(arena, parseInt(el.style.left), parseInt(el.style.top), '💥', '#FF5252');
+    if (starLives <= 0) endStarGame();
+  } else {
+    starScore++;
+    document.getElementById('star-score').textContent = starScore;
+    playSound('sfx-pop');
+    showStarFx(arena, parseInt(el.style.left), parseInt(el.style.top), '✨ +1', '#FFC107');
+
+    // Code fragment trigger at score 9
+    if (starScore === 9 && !code3Revealed) {
+      code3Revealed = true;
+      earnCodeFragment(2);
+    }
+  }
+}
+
+function showStarFx(arena, x, y, text, color) {
+  const fx = document.createElement('div');
+  fx.className = 'catch-miss-fx';
+  fx.textContent = text;
+  fx.style.left  = x + 'px';
+  fx.style.top   = y + 'px';
+  fx.style.color = color;
+  arena.appendChild(fx);
+  setTimeout(() => fx.remove(), 800);
+}
+
+function updateStarLives() {
+  document.getElementById('star-lives').textContent =
+    '⭐'.repeat(Math.max(0, starLives)) + '🖤'.repeat(Math.max(0, 3 - starLives));
+}
+
+function endStarGame() {
+  starRunning = false;
+  clearTimeout(starSpawnTimeout);
+  clearInterval(starSpeedInterval);
+  const arena = document.getElementById('star-arena');
+  arena.querySelectorAll('.star-item').forEach(el => {
+    clearTimeout(el._timeout);
+    el.remove();
+  });
+  activeStars = [];
+
+  if (starScore > starBest) starBest = starScore;
+  document.getElementById('star-best').textContent = starBest;
+  document.getElementById('star-start-btn').disabled  = false;
+  document.getElementById('star-start-btn').textContent = '⭐ Main Lagi!';
+  playSound('sfx-win');
+
+  let msg, sub;
+  if (starScore >= 20)     { msg = '🏆 Refleks dewa!';    sub = `${starScore} bintang! Kamu luar biasa! 🌟`; }
+  else if (starScore >= 12){ msg = '🎉 Keren banget!';    sub = `${starScore} bintang! Jari cepet nih! ⚡`; }
+  else if (starScore >= 6) { msg = '😄 Lumayan nih!';     sub = `${starScore} bintang. Coba lagi yuk!`; }
+  else                      { msg = '🌸 Pemanasan dulu!'; sub = `${starScore} bintang. Gaskeun lagi! 💪`; }
+
+  document.getElementById('star-result-title').textContent = msg;
+  document.getElementById('star-result-sub').textContent   = sub;
+  document.getElementById('star-result-banner').classList.add('show');
+  document.getElementById('star-hint').textContent = 'Mau nyoba lagi? 😄';
+}
+
+// =============================
 //   MEMORY MATCH GAME
 // =============================
 const MEM_EMOJIS = ['🎂','🎁','🌸','⭐','💖','🦄','🎀','🌈'];
-let memCards = [], memFlipped = [], memMatched = 0;
-let memMoves = 0, memTimerVal = 0, memTimerInt = null;
-let memRunning = false, memLock = false;
+
+const memState = {
+  cards: [], flipped: [], matched: 0,
+  moves: 0, time: 0, running: false, lock: false,
+  timerInt: null
+};
+
+function memEl(id) { return document.getElementById(id); }
 
 function startMemoryGame() {
-  if (memRunning) return;
+  if (memState.running) return;
 
   const usePhotos = memPhotos.length === 8;
+  Object.assign(memState, { flipped: [], matched: 0, moves: 0, time: 0, running: true, lock: false });
+  clearInterval(memState.timerInt);
 
-  memRunning = true; memFlipped = []; memMatched = 0; memMoves = 0; memTimerVal = 0;
-  clearInterval(memTimerInt);
+  memEl('mem-pairs').textContent  = '0/8';
+  memEl('mem-moves').textContent  = '0';
+  memEl('mem-time').textContent   = '0s';
+  memEl('mem-result-banner').classList.remove('show');
+  memEl('mem-start-btn').disabled  = true;
+  memEl('memory-hint').textContent = 'Ingat-ingat ya posisi kartunya!';
 
-  document.getElementById('mem-pairs').textContent  = '0/8';
-  document.getElementById('mem-moves').textContent  = '0';
-  document.getElementById('mem-time').textContent   = '0s';
-  document.getElementById('mem-result-banner').classList.remove('show');
-  document.getElementById('mem-start-btn').disabled  = true;
-  document.getElementById('memory-hint').textContent = 'Ingat-ingat ya posisi kartunya!';
+  // Build shuffled pool
+  let pool;
+  if (usePhotos) {
+    pool = memPhotos.flatMap((src, i) => [
+      { type: 'photo', src, id: i },
+      { type: 'photo', src, id: i }
+    ]);
+  } else {
+    pool = [...MEM_EMOJIS, ...MEM_EMOJIS].map(e => ({ type: 'emoji', src: e, id: e }));
+  }
 
-  // Build pool: 8 pairs
-  const pool = usePhotos
-    ? [...memPhotos.map((src, i) => ({ type: 'photo', src, id: i })),
-       ...memPhotos.map((src, i) => ({ type: 'photo', src, id: i }))]
-    : [...MEM_EMOJIS, ...MEM_EMOJIS].map(e => ({ type: 'emoji', src: e, id: e }));
-
-  // Shuffle
+  // Fisher-Yates shuffle
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
 
-  const grid = document.getElementById('memory-grid');
+  // Render grid
+  const grid = memEl('memory-grid');
   grid.innerHTML = '';
-  memCards = pool.map((item, idx) => {
+  memState.cards = pool.map((item, idx) => {
     const card = document.createElement('div');
     card.className = 'mem-card';
-    card.dataset.id  = item.id;
-    card.dataset.idx = idx;
-
-    if (usePhotos) {
-      card.dataset.src = item.src;
-      card.textContent = '?';
-    } else {
-      card.dataset.emoji = item.src;
-      card.textContent   = '?';
-    }
-
+    card.dataset.id    = item.id;
+    card.dataset.idx   = idx;
+    card.dataset.type  = item.type;
+    card.dataset.src   = item.src;
+    card.textContent   = '?';
     card.addEventListener('click', () => flipMemCard(card, usePhotos));
     grid.appendChild(card);
     return card;
   });
 
-  memTimerInt = setInterval(() => {
-    memTimerVal++;
-    document.getElementById('mem-time').textContent = memTimerVal + 's';
+  // Start timer
+  memState.timerInt = setInterval(() => {
+    memState.time++;
+    memEl('mem-time').textContent = memState.time + 's';
   }, 1000);
 }
 
 function flipMemCard(card, usePhotos) {
-  if (!memRunning || memLock) return;
+  const s = memState;
+  if (!s.running || s.lock) return;
   if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
-  if (memFlipped.length >= 2) return;
+  if (s.flipped.length >= 2) return;
 
+  // Flip card face-up
   card.classList.add('flipped');
+  playSound('sfx-flip');
+
   if (usePhotos) {
     card.innerHTML = '';
     const img = document.createElement('img');
@@ -391,53 +745,64 @@ function flipMemCard(card, usePhotos) {
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:9px;';
     card.appendChild(img);
   } else {
-    card.textContent = card.dataset.emoji;
+    card.textContent = card.dataset.src;
   }
-  memFlipped.push(card);
 
-  if (memFlipped.length === 2) {
-    memMoves++;
-    document.getElementById('mem-moves').textContent = memMoves;
-    memLock = true;
-    const [a, b] = memFlipped;
-    const matchKey = usePhotos ? 'id' : 'emoji';
-    if (a.dataset[matchKey] === b.dataset[matchKey]) {
-      a.classList.add('matched');
-      b.classList.add('matched');
-      memFlipped = [];
-      memMatched++;
-      memLock = false;
-      playSound('sfx-match');
-      document.getElementById('mem-pairs').textContent = `${memMatched}/8`;
-      if (memMatched === 8) endMemoryGame();
-    } else {
-      setTimeout(() => {
-        a.classList.remove('flipped'); a.innerHTML = ''; a.textContent = '?';
-        b.classList.remove('flipped'); b.innerHTML = ''; b.textContent = '?';
-        a.classList.add('wrong');
-        b.classList.add('wrong');
-        setTimeout(() => { a.classList.remove('wrong'); b.classList.remove('wrong'); }, 300);
-        memFlipped = [];
-        memLock = false;
-      }, 900);
-    }
+  s.flipped.push(card);
+
+  if (s.flipped.length < 2) return;
+
+  // Two cards flipped — check match
+  s.moves++;
+  memEl('mem-moves').textContent = s.moves;
+  s.lock = true;
+
+  const [a, b] = s.flipped;
+  const isMatch = a.dataset.id === b.dataset.id;
+
+  if (isMatch) {
+    a.classList.add('matched');
+    b.classList.add('matched');
+    s.flipped = [];
+    s.matched++;
+    s.lock = false;
+    playSound('sfx-match');
+    memEl('mem-pairs').textContent = `${s.matched}/8`;
+    if (s.matched === 8) endMemoryGame();
+  } else {
+    // Show wrong briefly then flip back
+    setTimeout(() => {
+      [a, b].forEach(c => {
+        c.classList.remove('flipped');
+        c.innerHTML = '';
+        c.textContent = '?';
+        c.classList.add('wrong');
+        setTimeout(() => c.classList.remove('wrong'), 300);
+      });
+      s.flipped = [];
+      s.lock = false;
+    }, 900);
   }
 }
 
 function endMemoryGame() {
-  memRunning = false;
-  clearInterval(memTimerInt);
-  document.getElementById('mem-start-btn').disabled  = false;
-  document.getElementById('mem-start-btn').textContent = '🃏 Main Lagi!';
+  const s = memState;
+  s.running = false;
+  clearInterval(s.timerInt);
+
+  memEl('mem-start-btn').disabled  = false;
+  memEl('mem-start-btn').textContent = '🃏 Main Lagi!';
   playSound('sfx-win');
+
   let msg, sub;
-  if (memTimerVal <= 30 && memMoves <= 12)    { msg = '🏆 iq 1000!';  sub = `${memMoves} langkah, ${memTimerVal}s! Ingatan bat nih!`; }
-  else if (memTimerVal <= 60 || memMoves <= 20){ msg = '🎉 wuih keren!';         sub = `${memMoves} langkah, ${memTimerVal}s! nice one!`; }
-  else                                          { msg = '😄 ok ok!';   sub = `${memMoves} langkah, ${memTimerVal}s. Coba lagi yah!`; }
-  document.getElementById('mem-result-title').textContent = msg;
-  document.getElementById('mem-result-sub').textContent   = sub;
-  document.getElementById('mem-result-banner').classList.add('show');
-  document.getElementById('memory-hint').textContent = 'Mau nyoba lagi? 😄';
+  if (s.time <= 30 && s.moves <= 12)      { msg = '🏆 timdak ingatan pmo!';  sub = `${s.moves} langkah, ${s.time}s! Ingatan bat nih!`; }
+  else if (s.time <= 60 || s.moves <= 20) { msg = '🎉 wuih keren!';           sub = `${s.moves} langkah, ${s.time}s! nice one!`; }
+  else                                     { msg = '😄 ok ok!';                sub = `${s.moves} langkah, ${s.time}s. Coba lagi yah!`; }
+
+  memEl('mem-result-title').textContent = msg;
+  memEl('mem-result-sub').textContent   = sub;
+  memEl('mem-result-banner').classList.add('show');
+  memEl('memory-hint').textContent = 'Mau nyoba lagi? 😄';
 }
 
 // =============================
@@ -452,7 +817,7 @@ let memPhotos = [
   'pics/nayra.jpg',
   'pics/fikri.jpg',
   'pics/sumala.jpg'
-]; // array of {src, name}
+];
 
 function handleMemPhotoUpload(event) {
   const files = Array.from(event.target.files).slice(0, 8 - memPhotos.length);
@@ -471,6 +836,7 @@ function handleMemPhotoUpload(event) {
 function renderMemPhotoPreview() {
   const preview = document.getElementById('mem-photo-preview');
   const status  = document.getElementById('mem-upload-status');
+  if (!preview) return;
   preview.innerHTML = '';
   memPhotos.forEach((src, i) => {
     const wrap = document.createElement('div');
@@ -484,9 +850,11 @@ function renderMemPhotoPreview() {
     wrap.appendChild(del);
     preview.appendChild(wrap);
   });
-  status.textContent = memPhotos.length === 8
-    ? '✅ 8 foto siap! Langsung main yuk!'
-    : `${memPhotos.length}/8 foto (butuh ${8 - memPhotos.length} lagi)`;
+  if (status) {
+    status.textContent = memPhotos.length === 8
+      ? '✅ 8 foto siap! Langsung main yuk!'
+      : `${memPhotos.length}/8 foto (butuh ${8 - memPhotos.length} lagi)`;
+  }
 }
 
 function setupMemPhotoZone() {
@@ -520,26 +888,24 @@ document.addEventListener('DOMContentLoaded', () => {
   if (music) music.volume = 0.5;
 
   setupMemPhotoZone();
-
-  // 🔥 INI YANG PENTING
   renderMemPhotoPreview();
 
-  music.play().catch(() => {
-    document.addEventListener('click', tryAutoPlay);
-  });
+  // Secret code input — allow Enter key
+  const codeInput = document.getElementById('secret-code-input');
+  if (codeInput) {
+    codeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') checkSecretCode();
+    });
+  }
 
-  // Auto-play BGM on first interaction (browser policy workaround)
   const tryAutoPlay = () => {
-    if (music && music.paused) {
-      music.play().catch(() => {});
-    }
+    if (music && music.paused) music.play().catch(() => {});
     document.removeEventListener('click', tryAutoPlay);
     document.removeEventListener('touchstart', tryAutoPlay);
     document.removeEventListener('keydown', tryAutoPlay);
   };
-  setupMemPhotoZone();
+
   music.play().catch(() => {
-    // Blocked — wait for first interaction
     document.addEventListener('click', tryAutoPlay);
     document.addEventListener('touchstart', tryAutoPlay);
     document.addEventListener('keydown', tryAutoPlay);
