@@ -777,3 +777,17 @@ body {
   max-width: 100%;
   font-size: 16px !important;
 }
+
+/* SECRET TAB UNLOCK ANIMATION */
+@keyframes secretTabPop {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.2); }
+  80%  { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+#secret-tab-btn {
+  animation: none;
+}
+.secret-tab-unlock {
+  animation: secretTabPop 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}

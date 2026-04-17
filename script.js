@@ -28,6 +28,8 @@ const CODE_PARTS = ['gurita', 'Bourbon', '2023/04/29', '✨'];
 let foundCodes = [false, false, false, false];
 // earnedCodes tracks which codes have been *earned* via gameplay (but not yet shown)
 let earnedCodes = [false, false, false, false];
+// gamePlayed tracks whether each game has been finished at least once (for Secret tab unlock)
+let gamePlayed = [false, false, false];
 let giftPopupOpened = false;
 let giftCodeClaimed = false;
 let secretTabOpened = false;
@@ -39,6 +41,19 @@ function earnCodeFragment(index) {
   // If secret tab is already open, reveal immediately
   if (secretTabOpened) {
     revealCodeFragment(index);
+  }
+}
+
+// Show the Secret tab button only after all 3 games have been played at least once
+function checkSecretTabVisibility() {
+  const allGamesPlayed = gamePlayed[0] && gamePlayed[1] && gamePlayed[2];
+  if (allGamesPlayed) {
+    const secretTabBtn = document.getElementById('secret-tab-btn');
+    if (secretTabBtn && secretTabBtn.style.display === 'none') {
+      secretTabBtn.style.display = '';
+      secretTabBtn.classList.add('secret-tab-unlock');
+      setTimeout(() => secretTabBtn.classList.remove('secret-tab-unlock'), 1000);
+    }
   }
 }
 
@@ -293,12 +308,6 @@ function popBalloon(balloon, event) {
   scoreEl.textContent = score;
   playSound('sfx-pop');
 
-  // Code fragment trigger at score 18
-  if (score === 18 && !code1Revealed) {
-    code1Revealed = true;
-    earnCodeFragment(0);
-  }
-
   const rect = arena.getBoundingClientRect();
   const fx = document.createElement('div');
   fx.className = 'pop-fx';
@@ -320,6 +329,17 @@ function endGame() {
   startBtn.disabled    = false;
   startBtn.textContent = '👾 Main Lagi!';
   playSound('sfx-win');
+
+  // Check exact final score for code fragment
+  if (score === 18 && !code1Revealed) {
+    code1Revealed = true;
+    earnCodeFragment(0);
+  }
+
+  // Mark game as played and check if Secret tab should appear
+  gamePlayed[0] = true;
+  checkSecretTabVisibility();
+
   let msg, sub;
   if (score >= 25)      { msg = '🏆 すごい Seira!';      sub = `${score} emoji! wahh sepuh banget ini mah! 🎊`; }
   else if (score >= 15) { msg = '🎉 Keren Bat dah!';     sub = `${score} emoji! Mantap sekali! 🙌`; }
@@ -409,12 +429,6 @@ function catchLoop(ts) {
           document.getElementById('catch-score').textContent = catchScore;
           playSound('sfx-catch');
           showCatchFx(catchArena, item.xPct, item.y, '✨ +1', '#69F0AE');
-
-          // Code fragment trigger at score 4
-          if (catchScore === 4 && !code2Revealed) {
-            code2Revealed = true;
-            earnCodeFragment(1);
-          }
         } else {
           catchLives--;
           updateCatchLives();
@@ -490,6 +504,17 @@ function endCatchGame() {
   document.getElementById('catch-start-btn').disabled = false;
   document.getElementById('catch-start-btn').textContent = '🧺 Main Lagi!';
   playSound('sfx-win');
+
+  // Check exact final score for code fragment
+  if (catchScore === 4 && !code2Revealed) {
+    code2Revealed = true;
+    earnCodeFragment(1);
+  }
+
+  // Mark game as played and check if Secret tab should appear
+  gamePlayed[1] = true;
+  checkSecretTabVisibility();
+
   let msg, sub;
   if (catchScore >= 20)     { msg = '🏆 sepuh menangkap!'; sub = `${catchScore} item! Hebat hebat!`; }
   else if (catchScore >= 12){ msg = '🎉 cool af!';          sub = `${catchScore} item gotcha!`; }
@@ -607,12 +632,6 @@ function tapStar(el, isBomb) {
     document.getElementById('star-score').textContent = starScore;
     playSound('sfx-pop');
     showStarFx(arena, parseInt(el.style.left), parseInt(el.style.top), '✨ +1', '#FFC107');
-
-    // Code fragment trigger at score 9
-    if (starScore === 9 && !code3Revealed) {
-      code3Revealed = true;
-      earnCodeFragment(2);
-    }
   }
 }
 
@@ -648,6 +667,16 @@ function endStarGame() {
   document.getElementById('star-start-btn').disabled  = false;
   document.getElementById('star-start-btn').textContent = '⭐ Main Lagi!';
   playSound('sfx-win');
+
+  // Check exact final score for code fragment
+  if (starScore === 9 && !code3Revealed) {
+    code3Revealed = true;
+    earnCodeFragment(2);
+  }
+
+  // Mark game as played and check if Secret tab should appear
+  gamePlayed[2] = true;
+  checkSecretTabVisibility();
 
   let msg, sub;
   if (starScore >= 20)     { msg = '🏆 Refleks dewa!';    sub = `${starScore} bintang! Kamu luar biasa! 🌟`; }
